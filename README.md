@@ -16,7 +16,7 @@
 
 Stop a rogue agent before it acts, and prove what it tried.
 
-Uses CrewAI's [tool call hooks](https://docs.crewai.com/en/learn/tool-hooks) to sign every tool invocation with [Asqav](https://asqav.com), producing a tamper-evident record of what your crew attempted. By default the integration observes and records (fail-open, never blocks). Turn on fail-closed mode to block a tool the moment Asqav refuses to sign its start event.
+Uses CrewAI's [tool call hooks](https://docs.crewai.com/en/learn/tool-hooks) to sign every tool invocation with [Asqav](https://asqav.com), producing a tamper-evident record of what your crew attempted. By default the integration observes and records, fail-open, and never blocks. Turn on fail-closed mode to block a tool the moment Asqav refuses to sign its start event.
 
 ## Install
 
@@ -32,7 +32,7 @@ Once published, the install will be:
 pip install asqav-crewai
 ```
 
-This pulls in the `asqav` SDK. CrewAI itself is a peer dependency you install separately (or via the `crewai` extra):
+This pulls in the `asqav` SDK. CrewAI itself is a peer dependency you install separately, or via the `crewai` extra:
 
 ```bash
 pip install "asqav-crewai[crewai]"
@@ -79,13 +79,13 @@ AsqavHooks(agent_name="my-crew", fail_closed=True).register()  # block on refuse
 - `before_tool_call` - signs `tool:start` with tool name and an input preview
 - `after_tool_call` - signs `tool:end` with tool name and output metadata
 
-The `before_tool_call` hook receives a `ToolCallHookContext` (`tool_name`, `tool_input`, `tool`, `agent`, `task`, `crew`). In fail-open mode it always returns `None` (allow). In fail-closed mode it returns `False` (block) when the start signature is refused. The `after_tool_call` hook returns `None` and never alters the tool result.
+The `before_tool_call` hook receives a `ToolCallHookContext` carrying `tool_name`, `tool_input`, `tool`, `agent`, `task`, and `crew`. In fail-open mode it always returns `None` to allow the call. In fail-closed mode it returns `False` to block the call when the start signature is refused. The `after_tool_call` hook returns `None` and never alters the tool result.
 
 ## Data handling
 
 `asqav-crewai` is a thin wrapper around the `asqav` Python SDK and inherits its mode behavior:
 
-- Asqav cloud (`*.asqav.com`): the SDK hashes your action context locally and sends only the hash plus a small metadata bag. Raw prompts and tool arguments never leave your infrastructure.
+- Asqav cloud on `*.asqav.com`: the SDK hashes your action context locally and sends only the hash plus a small metadata bag. Raw prompts and tool arguments never leave your infrastructure.
 - Self-hosted: the SDK sends the full context so the server can run policy checks, PII redaction, and richer audit views.
 
 You can override per call:
