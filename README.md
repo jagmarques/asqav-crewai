@@ -35,7 +35,7 @@ pip install asqav-crewai
 This pulls in the `asqav` SDK. CrewAI itself is a peer dependency you install separately, or via the `crewai` extra:
 
 ```bash
-pip install "asqav-crewai[crewai]"
+pip install "asqav-crewai[crewai] @ git+https://github.com/jagmarques/asqav-crewai.git"
 ```
 
 Tool call hooks require CrewAI 1.9.1 or newer.
@@ -45,6 +45,8 @@ Tool call hooks require CrewAI 1.9.1 or newer.
 ```python
 import asqav
 from crewai import Agent, Crew, Task
+from crewai.tools import tool
+
 from asqav_crewai import AsqavHooks
 
 asqav.init(api_key="sk_...")
@@ -52,11 +54,30 @@ asqav.init(api_key="sk_...")
 # Register Asqav signing for every tool call in this process
 AsqavHooks(agent_name="my-crew").register()
 
-crew = Crew(agents=[...], tasks=[...])
-result = crew.kickoff()
+
+@tool("echo_tool")
+def echo_tool(text: str) -> str:
+    """Echo the given text back."""
+    return f"echoed {text}"
+
+
+agent = Agent(
+    role="Echoer",
+    goal="Echo one message via the echo tool",
+    backstory="A minimal test agent.",
+    tools=[echo_tool],
+)
+task = Task(
+    description="Echo the message 'hello world' using echo_tool.",
+    expected_output="The echoed message.",
+    agent=agent,
+)
+result = Crew(agents=[agent], tasks=[task]).kickoff()
 ```
 
 Every tool call your crew makes produces signed `tool:start` and `tool:end` events through the Asqav API. Signing runs server-side with NIST FIPS 204 ML-DSA cryptography, so the audit trail is tamper-evident and holds up for EU AI Act, DORA, and SOC 2 evidence.
+
+The hooks fire on tool calls. A crew whose agents never call a tool produces no signatures.
 
 ## Fail-open vs fail-closed
 
