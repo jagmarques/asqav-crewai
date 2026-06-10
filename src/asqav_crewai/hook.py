@@ -1,4 +1,4 @@
-"""CrewAI tool-call hooks that sign tool:start, tool:end, and tool:error
+"""CrewAI tool-call hooks that sign tool:start and tool:end
 events via the Asqav API. Signing is fail-open by default; an optional
 fail-closed mode blocks the tool when a tool:start signature is refused.
 See README for usage."""
