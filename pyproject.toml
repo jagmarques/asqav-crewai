@@ -37,7 +37,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "asqav>=0.2.15",
+    "asqav>=0.4.5",
 ]
 
 [project.optional-dependencies]

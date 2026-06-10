@@ -17,7 +17,7 @@ try:
     )
 except ImportError as err:
     raise ImportError(
-        "asqav-crewai requires crewai. Install with: pip install asqav-crewai"
+        "asqav-crewai requires crewai. Install with: pip install 'crewai>=1.9.1'"
     ) from err
 
 logger = logging.getLogger("asqav")
