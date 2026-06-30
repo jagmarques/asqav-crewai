@@ -101,12 +101,16 @@ class AsqavGuardrailProvider(AsqavAdapter):
         preflight = getattr(self._agent, "preflight", None)
         if preflight is not None:
             try:
-                pf_result = preflight("tool:start", context)
-                if pf_result is not None and not pf_result:
+                pf_result = preflight(f"tool:{request.tool_name}")
+                if pf_result is not None and not pf_result.cleared:
                     return GuardrailDecision(
                         allow=False,
-                        reason=f"asqav preflight denied tool '{request.tool_name}'",
-                        metadata={"tool_name": request.tool_name},
+                        reason=pf_result.explanation
+                        or f"asqav preflight denied tool '{request.tool_name}'",
+                        metadata={
+                            "tool_name": request.tool_name,
+                            "reasons": list(getattr(pf_result, "reasons", []) or []),
+                        },
                     )
             except Exception as exc:
                 logger.warning("asqav preflight check failed: %s", exc)

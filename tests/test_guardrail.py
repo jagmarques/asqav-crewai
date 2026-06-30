@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 import types
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -122,6 +123,42 @@ class TestAsqavGuardrailProviderEvaluate:
 
         _, context = mock_asqav.sign.call_args[0][:2]
         assert len(context["input"]) <= 200
+
+
+class TestAsqavGuardrailProviderPreflight:
+    def test_evaluate_denies_when_preflight_not_cleared(self, mock_asqav: MagicMock):
+        # A revoked/blocked agent (preflight cleared=False) must be DENIED
+        # before signing, with the explanation surfaced as the reason.
+        from asqav_crewai import AsqavGuardrailProvider, GuardrailRequest
+
+        mock_asqav.preflight = MagicMock(
+            return_value=SimpleNamespace(
+                cleared=False, reasons=["agent_revoked"], explanation="agent is revoked"
+            )
+        )
+        provider = AsqavGuardrailProvider(agent_name="test-guard")
+        req = GuardrailRequest(tool_name="delete_file", tool_input={})
+        decision = provider.evaluate(req)
+
+        assert decision.allow is False
+        assert decision.reason == "agent is revoked"
+        assert decision.metadata["reasons"] == ["agent_revoked"]
+        mock_asqav.preflight.assert_called_once_with("tool:delete_file")
+        mock_asqav.sign.assert_not_called()  # deny happens before signing
+
+    def test_evaluate_allows_when_preflight_cleared_then_signs(self, mock_asqav: MagicMock):
+        from asqav_crewai import AsqavGuardrailProvider, GuardrailRequest
+
+        mock_asqav.preflight = MagicMock(
+            return_value=SimpleNamespace(cleared=True, reasons=[], explanation="ok")
+        )
+        provider = AsqavGuardrailProvider(agent_name="test-guard")
+        req = GuardrailRequest(tool_name="search", tool_input={"q": "hi"})
+        decision = provider.evaluate(req)
+
+        assert decision.allow is True
+        mock_asqav.preflight.assert_called_once_with("tool:search")
+        mock_asqav.sign.assert_called_once()  # cleared -> falls through to sign
 
 
 class TestEnableGuardrailHookFromContext:
