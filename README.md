@@ -22,22 +22,16 @@ Asqav governs the agents you wire through it. An agent that never routes through
 
 ## Install
 
-Not yet on PyPI. Install from GitHub:
-
 ```bash
-pip install "git+https://github.com/jagmarques/asqav-crewai.git"
+pip install "asqav-crewai[crewai]"
 ```
 
-Once published, the install will be:
+CrewAI is a peer dependency. If you already have `crewai` installed you can drop the `[crewai]` extra. If it is missing, the package raises a clear `ImportError` telling you to install it.
+
+If the PyPI release has not landed yet, install straight from GitHub instead:
 
 ```bash
-pip install asqav-crewai
-```
-
-This pulls in the `asqav` SDK. CrewAI itself is a peer dependency you install separately, or via the `crewai` extra:
-
-```bash
-pip install "asqav-crewai[crewai] @ git+https://github.com/jagmarques/asqav-crewai.git"
+pip install "git+https://github.com/jagmarques/asqav-crewai.git#egg=asqav-crewai[crewai]"
 ```
 
 Tool call hooks require CrewAI 1.9.1 or newer.
