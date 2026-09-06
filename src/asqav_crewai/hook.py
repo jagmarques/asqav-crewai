@@ -32,6 +32,8 @@ class AsqavHooks(AsqavAdapter):
     ``fail_closed=True`` to block a call through CrewAI's before hook when
     the start signature is absent. A failed signing request does not guarantee
     a receipt. Agent creation or lookup can raise during construction.
+    CrewAI hook dispatch determines whether this hook runs; hook-dispatch
+    errors may allow execution without its signing decision.
 
     Args:
         api_key: Optional API key override (uses ``asqav.init()`` default).

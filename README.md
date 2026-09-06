@@ -14,7 +14,7 @@
 
 # Asqav for CrewAI
 
-Uses CrewAI's [tool call hooks](https://docs.crewai.com/en/learn/tool-hooks) to attempt signing `tool:start` and `tool:end` events with [Asqav](https://asqav.com). Successful signing requests produce receipts signed on the Asqav server. Signing failures do not block tool execution by default. With `fail_closed=True`, a missing start signature blocks the tool call through CrewAI's hook mechanism.
+Uses CrewAI's [tool call hooks](https://docs.crewai.com/en/learn/tool-hooks) to attempt signing `tool:start` and `tool:end` events with [Asqav](https://asqav.com). Successful signing requests produce receipts signed on the Asqav server. Signing failures do not block tool execution by default. With `fail_closed=True`, a signing attempt that returns no signature makes Asqav's before hook return `False`. CrewAI blocks a call on that result.
 
 Asqav governs the agents you wire through it. An agent that never routes through the governed path produces no receipt and is not detected.
 
@@ -73,7 +73,7 @@ result = Crew(agents=[agent], tasks=[task]).kickoff()
 print(result)
 ```
 
-The hooks cover tool calls that reach CrewAI's hook dispatch. Model calls, direct calls to tool functions, and calls skipped by a blocking hook that runs first are outside the start hook's coverage. A crew that never reaches a tool hook produces no signing requests from this integration.
+The hooks cover calls that reach Asqav's registered hooks. Model calls and direct calls to tool functions are outside that coverage. An earlier hook that blocks or raises can prevent Asqav's before hook from running. CrewAI catches hook errors and may execute the tool, so hook-dispatch errors are outside the `fail_closed` guarantee.
 
 ## Fail-open vs fail-closed
 
@@ -83,7 +83,7 @@ By default, a signing error is logged and the tool may proceed. A failed signing
 AsqavHooks(agent_name="my-crew").register()  # allow despite signing failure
 ```
 
-Choose fail-closed mode when tool execution must wait for a start signature. A refusal or signing error that leaves no signature makes the before hook return `False`, which asks CrewAI to block that call. This does not guarantee that a blocked attempt was recorded. Agent creation or lookup happens when `AsqavHooks` is constructed and can raise in either mode.
+When Asqav's before hook runs in fail-closed mode, a signing attempt that returns no signature makes it return `False`, which asks CrewAI to block that call. This does not guarantee that a blocked attempt was recorded. Agent creation or lookup happens when `AsqavHooks` is constructed and can raise in either mode.
 
 ```python
 AsqavHooks(agent_name="my-crew", fail_closed=True).register()
@@ -94,7 +94,7 @@ AsqavHooks(agent_name="my-crew", fail_closed=True).register()
 `AsqavHooks` extends the Asqav adapter base class and registers two global CrewAI hooks:
 
 - `before_tool_call` attempts to sign `tool:start` with the tool name and an input preview capped at 200 characters.
-- `after_tool_call` attempts to sign `tool:end` with the tool name, result type, and stringified result length. It returns `None` to leave the result unchanged.
+- `after_tool_call` attempts to sign `tool:end` with the tool name, result type, and stringified result length (zero when the result is `None`). It returns `None` to leave the result unchanged.
 
 An end event describes the result seen by the after hook. It does not by itself establish that the tool executed or succeeded. Failure to sign an end event cannot undo an executed tool.
 
