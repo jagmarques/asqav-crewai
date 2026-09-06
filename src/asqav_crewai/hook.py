@@ -1,4 +1,4 @@
-"""CrewAI tool-call hooks that sign tool:start and tool:end
+"""CrewAI tool-call hooks that attempt to sign tool:start and tool:end
 events via the Asqav API. Signing is fail-open by default; an optional
 fail-closed mode blocks the tool when a tool:start signature is refused.
 See README for usage."""
@@ -26,12 +26,14 @@ _MAX_LEN = 200
 
 
 class AsqavHooks(AsqavAdapter):
-    """Sign CrewAI tool call events (tool:start, tool:end) via the Asqav API.
+    """Attempt to sign CrewAI tool-call events via the Asqav API.
 
-    Fail-open by default: signing errors are logged, not raised, so the agent
-    pipeline never breaks because of governance. Pass ``fail_closed=True`` to
-    block a tool when its tool:start signature is refused (a rogue agent is
-    stopped before it acts, and the attempt is still recorded).
+    Signing errors are logged and allow execution by default. Pass
+    ``fail_closed=True`` to block a call through CrewAI's before hook when
+    the start signature is absent. A failed signing request does not guarantee
+    a receipt. Agent creation or lookup can raise during construction.
+    CrewAI hook dispatch determines whether this hook runs; hook-dispatch
+    errors may allow execution without its signing decision.
 
     Args:
         api_key: Optional API key override (uses ``asqav.init()`` default).
@@ -90,7 +92,7 @@ class AsqavHooks(AsqavAdapter):
     def register(self) -> None:
         """Register the Asqav before/after tool-call hooks globally with CrewAI.
 
-        Hooks apply to every tool call across all agents and crews in-process.
+        Hooks observe calls routed through CrewAI's tool-hook dispatch.
         """
         register_before_tool_call_hook(self._before_tool)
         register_after_tool_call_hook(self._after_tool)
